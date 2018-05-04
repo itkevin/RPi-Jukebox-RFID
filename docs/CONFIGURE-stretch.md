@@ -71,6 +71,7 @@ If you want to use the `systemd` way, first copy the service config files to the
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/rfid-reader.service.stretch-default.sample /etc/systemd/system/rfid-reader.service 
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/startup-sound.service.stretch-default.sample /etc/systemd/system/startup-sound.service
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/gpio-buttons.service.stretch-default.sample /etc/systemd/system/gpio-buttons.service
+sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/shutdown-on-idle.stretch-default.service /etc/systemd/system/shutdown-on-idle.service
 ```
 
 Now systemd has to be notified that there are new service files:
@@ -85,6 +86,7 @@ The last step is to enable the service files:
 sudo systemctl enable rfid-reader
 sudo systemctl enable startup-sound
 sudo systemctl enable gpio-buttons (optional)
+sudo systemctl enable shutdown-on-idle (optional)
 ```
 
 The newly installed service can be started either by rebooting the jukebox or

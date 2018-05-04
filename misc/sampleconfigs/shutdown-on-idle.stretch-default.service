@@ -1,0 +1,11 @@
+[Unit]  
+Description=Automatically shuts down your Pi when vlc is not running to reduce power consumption
+After=network.target iptables.service firewalld.service
+
+[Service]
+Restart=always
+WorkingDirectory=/home/pi/RPi-Jukebox-RFID
+ExecStart=/usr/bin/python3 /home/pi/RPi-Jukebox-RFID/scripts/shutdown_on_idle.py
+
+[Install]
+WantedBy=multi-user.target
