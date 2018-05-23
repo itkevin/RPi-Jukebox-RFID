@@ -3,7 +3,7 @@
 /**************************************************
 * VARIABLES
 * No changes required if you stuck to the
-* INSTALL.md instructions.
+* INSTALL-stretch.md instructions.
 * If you want to change the paths, edit config.php
 ***************************************************/
 
@@ -193,15 +193,12 @@ if(isset($urlparams['stop']) && $urlparams['stop'] == "true") {
 
 // play folder with VLC
 if(isset($urlparams['play']) && $urlparams['play'] != "" && is_dir(urldecode($urlparams['play']))) {
-    // kill vlc if running
-    // NOTE: this is being done as sudo, because the webserver does not have the rights to kill VLC
-    $exec = "/usr/bin/sudo pkill vlc > /dev/null 2>/dev/null";
+
+    // pass folder to playout script
+    // escape whitespaces with backslashes
+    $exec = "/usr/bin/sudo ".$conf['scripts_abs']."/rfid_trigger_play.sh -d=".preg_replace('/\s+/', '\ ',basename($urlparams['play']));//basename($urlparams['play']);
     exec($exec);
 
-    // pipe playlist into VLC
-    // NOTE: this is being done as sudo, because the webserver does not have the rights to start VLC
-    $exec = "/usr/bin/sudo /usr/bin/cvlc --no-video -I rc --rc-host localhost:4212 '".urldecode($urlparams['play'])."' > /dev/null 2>/dev/null &";
-    exec($exec);
     /* redirect to drop all the url parameters */
     header("Location: ".$conf['url_abs']);
     exit; 
@@ -271,14 +268,151 @@ if(isset($urlparams['player'])) {
 
 html_bootstrap3_createHeader("en","RPi Jukebox",$conf['base_url']);
 
-include("page_home.php");
-
+?>
+<body>
+  <div class="container">
+      
+<?php
+include("inc.navigation.php");
 ?>
 
+    <div class="row playerControls">
+      <div class="col-lg-12">
+<?php
+/*
+* Do we need to voice a warning here?
+*/
+if(isset($warning)) {
+    print '<div class="alert alert-warning">'.$warning.'</div>';
+}
 
+include("inc.controlPlayer.php");
+
+include("inc.controlVolumeUpDown.php");
+?>
 
       </div><!-- / .col-lg-12 -->
     </div><!-- /.row -->
+
+    <div class="row">
+      <div class="col-lg-12">
+<?php
+include("inc.volumeSelect.php");
+?>              
+        </div>
+        <div class="col-lg-6">
+              <h4>Manage Files and Chips</h4>
+              <!-- Button trigger modal -->
+                <a href="cardRegisterNew.php" class="btn btn-primary btn">
+                <i class='fa  fa-plus-circle'></i> Register new card ID
+                </a>
+      </div><!-- / .col-lg-12 -->
+    </div><!-- /.row -->
+
+    <div class="row">
+      <div class="col-lg-12">
+        
+  <h2>Available audio</h2>
+<?php
+
+// read the shortcuts used
+$shortcutstemp = array_filter(glob($conf['base_path'].'/shared/shortcuts/*'), 'is_file');
+$shortcuts = array(); // the array with pairs of ID => foldername
+// read files' content into array
+foreach ($shortcutstemp as $shortcuttemp) {
+    $shortcuts[basename($shortcuttemp)] = trim(file_get_contents($shortcuttemp));
+}
+//print "<pre>"; print_r($shortcutstemp); print "</pre>"; //???
+//print "<pre>"; print_r($shortcuts); print "</pre>"; //???
+
+// read the subfolders of shared/audiofolders
+$audiofolders = array_filter(glob($conf['base_path'].'/shared/audiofolders/*'), 'is_dir');
+usort($audiofolders, 'strcasecmp');
+
+// counter for ID of each folder
+$idcounter = 0;
+
+// go through all folders
+foreach($audiofolders as $audiofolder) {
+    
+    // increase ID counter
+    $idcounter++;
+    
+    // get list of content for each folder
+    $files = scandir($audiofolder); 
+    $accordion = "<h4>Contains the following file(s):</h4><ul>";
+    foreach($files as $file) {
+        if(is_file($audiofolder."/".$file)){
+            $accordion .= "\n<li>".$file."</li>";
+        }
+    }
+    $accordion .= "</ul>";
+    
+    // get all IDs that match this folder
+    $ids = ""; // print later
+    $audiofolderbasename = trim(basename($audiofolder));
+    if(in_array($audiofolderbasename, $shortcuts)) {
+        foreach ($shortcuts as $key => $value) {
+            if($value == $audiofolderbasename) {
+                $ids .= " <a href='cardEdit.php?cardID=$key'>".$key." <i class='fa fa-wrench'></i></a> | ";
+            }
+        }
+        $ids = rtrim($ids, "| "); // get rid of trailing slash
+    }
+    // if folder not empty, display play button and content
+    if ($accordion != "<h4>Contains the following file(s):</h4><ul></ul>") {
+        print "
+        <div class='well'>
+            <a href='?play=".$audiofolder."' class='btn btn-success'><i class='fa fa-play'></i> Play</a>";
+        print "
+            <span data-toggle='collapse' data-target='#folder".$idcounter."' class='btn btn-info btnFolder'>Folder:
+                ".str_replace($conf['base_path'].'/shared/audiofolders/', '', $audiofolder)."
+                <i class='fa fa-info-circle'></i>
+            </span>
+            <div id='folder".$idcounter."' class='collapse folderContent'>
+            ".$accordion."
+            </div>
+        ";
+        // print ID if any found
+        if($ids != "") {
+            print "
+            <br/>Card ID: ".$ids;
+        }
+        print "
+        </div>
+        ";
+    }
+}
+
+?>
+
+      </div><!-- / .col-lg-12 -->
+    </div><!-- /.row -->
+    
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Last used Chip ID</h4>
+          </div>
+          <div class="modal-body">
+<pre>
+<?php
+print file_get_contents($conf['base_path'].'/shared/latestID.txt', true);
+?>
+</pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+    
+        </div><!-- / .modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+
   </div><!-- /.container -->
 
 </body>
