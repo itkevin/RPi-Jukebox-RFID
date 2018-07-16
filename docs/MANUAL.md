@@ -11,6 +11,34 @@ In this manual you will learn:
 * [How to control the jukebox through the web app.](#webapp)
 * [How to assign cards specific tasks such as changing the volume level or shutting down the jukebox.](#cardcontrol)
 
+## <a name="settings"></a>Changing Phoniebox settings
+
+There is a folder called `settings` which contains audio and card settings. How to change the card settings, you will find below in this document. Here is a list of the other available settings.
+
+### `settings/Audio_iFace_Name`
+This is a file containing a string, by default `PCM`.
+
+Inside `settings/Audio_iFace_Name` is the **iFace name** of the sound card. By default for the RPi this would be `PCM`. But this does not work for every setup. If you are using *phatbeat* as a DAC for example, you need to change the content of `Audio_iFace_Name` from `PCM` to `Master` or `Speaker`. Other external sound cards might use different interface names. To see if `PCM` could work for you, type `amixer sget PCM`.
+To list all available iFace names, type `amixer scontrols`.
+
+### `settings/Max_Volume_Limit`
+This is a file containing a number, by default `100`.
+
+If one is **using an audio amplifier** (like the pHAT BEAT) without a physical volume limiter (like a potentiometer) your Phoniebox can get very loud "accidentally". The maximal volume can be set in `settings/Max_Volume_Limit`.
+
+### `settings/Audio_Volume_Change_Step`
+This is a file containing a number, by default `3`.
+
+Changing this number affects the `volumeup` and `volumedown` function in the web app or triggered by RFID cards. Increasing the number will result in larger volume jumps. Decreasing the number will result in smaller changes of the volume.
+
+### `settings/Idle_Time_Before_Shutdown`
+This is a file containing a number, by default `0`.
+
+This feature is helpful for powerbank users who want to save battery power. It shuts down the idle Phoniebox after a specified number of minutes.
+If you want to use the *idle shutdown* feature, you can specify the number of minutes in this file, after which the Phoniebox will shut down when either the VLC player is not playing and/or the sound has been muted.
+
+**IMPORTANT: if you do not want to use auto shutdown, the number in the file must be 0**
+
 ## <a name="connect"></a>Connecting to the jukebox to add files
 
 You need to connect to the jukebox in order to manage audio files and register new RFID cards. There are two ways to connect to the jukebox.
@@ -253,39 +281,45 @@ The commands which are available in the script are:
 Once you have logged in to the RPi over SSH or booted with monitor and keyboard attached, open the script in the nano editor:
 
 ~~~~
-$ nano /home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh
+$ nano /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf
 ~~~~
 
 Scroll down until you see the list of available commands:
 
 ~~~~
-CMDMUTE="mute"
-CMDVOL30="30"
-CMDVOL50="50"
-CMDVOL75="75"
-CMDVOL80="80"
-CMDVOL85="85"
-CMDVOL90="90"
-CMDVOL95="95"
-CMDVOL100="100"
-CMDSTOP="stop"
-CMDSHUTDOWN="halt"
+CMDMUTE="%CMDMUTE%"
+CMDVOL30="%CMDVOL30%"
+CMDVOL50="%CMDVOL50%"
+CMDVOL75="%CMDVOL75%"
+CMDVOL80="%CMDVOL80%"
+CMDVOL85="%CMDVOL85%"
+CMDVOL90="%CMDVOL90%"
+CMDVOL95="%CMDVOL95%"
+CMDVOL100="%CMDVOL100%"
+CMDVOLUP="%CMDVOLUP%"
+CMDVOLDOWN="%CMDVOLDOWN%"
+CMDSTOP="%CMDSTOP%"
+CMDSHUTDOWN="%CMDSHUTDOWN%"
+CMDREBOOT="%CMDREBOOT%"
 ~~~~
 
 Change the values of the commands you want to assign, leave the other ones unchanged. In our example, the changed list might look like this:
 
 ~~~~
-CMDMUTE="0594672283"
-CMDVOL30="30"
-CMDVOL50="50"
-CMDVOL75="75"
-CMDVOL80="80"
-CMDVOL85="85"
-CMDVOL90="1594672283"
-CMDVOL95="95"
-CMDVOL100="100"
-CMDSTOP="stop"
-CMDSHUTDOWN="2594672283"
+CMDMUTE="1352647584"
+CMDVOL30="%CMDVOL30%"
+CMDVOL50="%CMDVOL50%"
+CMDVOL75="%CMDVOL75%"
+CMDVOL80="%CMDVOL80%"
+CMDVOL85="%CMDVOL85%"
+CMDVOL90="%CMDVOL90%"
+CMDVOL95="%CMDVOL95%"
+CMDVOL100="%CMDVOL100%"
+CMDVOLUP="984000025364"
+CMDVOLDOWN="2636453782"
+CMDSTOP="%CMDSTOP%"
+CMDSHUTDOWN="%CMDSHUTDOWN%"
+CMDREBOOT="%CMDREBOOT%"
 ~~~~
 
 Save the changes and close the editor. The changes takes effect immediately.
@@ -293,6 +327,14 @@ Save the changes and close the editor. The changes takes effect immediately.
 **Note:** if you (accidently) assign a command and an audio folder to the same card, the jukebox will not play the audio. It will only execute the command.
 
 # <a name="faq"></a>Troubleshooting / FAQ
+
+## <a name="faqaudioimprovement"></a>I want to improve the onboard audio quality
+
+The Pi onboard audio quality is not the best. If you don't intend to go with an external USB card, these hints might help to improve the quality. Please share your experience in the "issues" section on github. These suggestions might depend on your operating system, so don't just throw them all in the mix :) Here you can find a [good list of audio improvements to try](https://github.com/superjamie/lazyweb/wiki/Raspberry-Pi-3.5mm-Audio-Hiss). What seems to work for many:
+
+* **Setting 'audio dither'**: The onboard audio output uses config options to change the way the analogue audio is driven, and whether some firmware features are enabled or not. See the official Raspberry page for [more information on `disable_audio_dither` and `enable_audio_dither`](https://www.raspberrypi.org/documentation/configuration/config-txt/audio.md).
+* **Settings for PMW driver**: Available in newer Raspbian as of Feb 2016  is a PWM audio driver that significantly increases the audio quality available from the 3.5mm TRRS jack. In `/boot/config.txt` add the following line: `audio_pwm_mode=2`
+* **Firmware update**:  If you want to update the RPI firmware, this is the right point to do so. This manual was written for the default firmware. Read more about how to update and why you might want to give it a try in a separate [Firmware Update document](FIRMWARE_UPDATE.md).
 
 ## <a name="changewifisettings"></a>I am moving, how do I get the jukebox into my new WiFi network?
 
@@ -336,9 +378,13 @@ static domain_name_servers=192.168.178.1
 ~~~~
 Save the changes with `Ctrl & O` then `Enter` then `Ctrl & X`.
 
-## amixer command requires different device name, not PCM
+## Changing the volume does not work, but the playout works
 
-There is a script which allows you to specify the shorthand for the audio device, which is by default `PCM`. The file in question is [playout_controls.sh](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/scripts/playout_controls.sh.sample). See more in [the configuration manual](CONFIGURE-stretch.md) under *Copy the media player and daemon script*.
+The `amixer` command might require a different device name, not `PCM`.
+
+Inside `settings/Audio_iFace_Name` is the iFace name of the sound card. By default for the RPi this would be `PCM`. But this does not work for every setup. If you are using *phatbeat* as a DAC for example, you need to change the content of `Audio_iFace_Name` from `PCM` to `Master`. Other external sound cards might use different interface names. To see if `PCM` could work for you, type `amixer sget PCM`.
+
+To list all available iFace names, type `amixer controls`.
 
 ## daemon_rfid_reader.py only works via SSH not by RFID cards
 `daemon_rfid_reader.py` works perfectly when running through SSH manually. However, when running at reboot, it does not play the audio files when triggered by RFID tag. This can happen when cron runs them too early in the boot process.
@@ -377,6 +423,8 @@ Run this script every minute by adding the following line via crontab:
 ## The RFID Reader doesn't seem to work
 
 There could be many reasons why the RFID Reader is not working reliably or behaves strangely. This could be due to a weak power supply or an insuficient power bank. Worth trying out before you try anything else.
+
+If you used the install script, you might have forgotten to register your RFID card reader. See the section *Register your USB device for the jukebox* inside [CONFIGURE-stretch.md](CONFIGURE-stretch.md) (if you are still running *jessie*, see [CONFIGURE-jessie.md](CONFIGURE-jessie.md). 
 
 ## Everything seems to work, but I hear nothing when swiping a card
 

@@ -3,9 +3,11 @@ A contactless jukebox for the Raspberry Pi, playing local audio files, playlists
 
 *Important update news*
 
+* **Changing audio player? Your thoughts please** There is a [new branch with 'resume play'](https://github.com/MiczFlor/RPi-Jukebox-RFID/tree/pr80-mpd-as-audio-player) in the repo using `mpd` instead of `vlc` for audio playout. What do you think? Use this [thread for feedback and opinions](https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/79) (2018-07-04)
+* **Latest Version: 0.9.7** For upgrade information please see [`UPGRADE.md`](docs/UPGRADE.md) for details on upgrading (2018-07-04)
+* **auto shutdown** Specify a number after which the idle Phoniebox will shutdown automatically. See [Phoniebox settings](docs/MANUAL.md#settings) for details (2018-07-03)
 * **Podcasts!** More for myself than anybody else, I guess, I added the [podcast feature for Phoniebox](docs/MANUAL.md#podcasts) (2018-05-09)
 * **`config.php` removed in repo** To fix a flaw of the initial commit, I removed the `config.php` file from the `htdocs` directory. It will be created automatically from `config.php.sample`. If you encounter problems after `git pull`, download [`config.php.sample`](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/htdocs/config.php.sample) adjust and copy to `config.php`. (2018-05-03)
-* **NEW: Upgrade information** please see [`UPGRADE.md`](docs/UPGRADE.md) for details on upgrading (2018-05-29)
 
 ---
 
@@ -15,7 +17,7 @@ A contactless jukebox for the Raspberry Pi, playing local audio files, playlists
 
 **What makes this jukebox easy to install and use:**
 
-* Runs on all Raspberry Pi models (1, 2 and 3) and [Raspberry Zero](https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/15).
+* Runs on all Raspberry Pi models (1, 2 and 3) and [Raspberry Zero](https://github.com/MiczFlor/RPi-Jukebox-RFID/issues/15). (jump to the [install instructions](#install))
 * Just plug and play using USB, no soldering iron needed.
 * Once the jukebox is up and running, add music from any computer on your home network.
 * Register new RFID cards easily without having to connect to the RPi.
@@ -41,11 +43,13 @@ The web app runs on any device and is mobile optimised. It provides:
 
 **See more innovation, upcycling and creativity in the [Jukebox Gallery](docs/GALLERY.md) or visit and share the project's homepage at [phoniebox.de](http://phoniebox.de/). There is also an [english Phoniebox page](http://phoniebox.de/index.php?l=en).**
 
-## Installation
+## <a name="install"></a>Installation
 
-* Installation instructions for Raspbian [Jessie](docs/INSTALL-jessie.md) and [Stretch](docs/INSTALL-stretch.md) are available in the `docs` folder. (experts might take a look at the [install script for Jessie](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/scripts/installscripts/jessie-install-default-01.sh)) or [install script for Stretch](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/scripts/installscripts/stretch-install-default-01.sh)).
-* Then walk through the configuraton for [Jessie](docs/CONFIGURE-jessie.md) or [Stretch](docs/CONFIGURE-stretch.md).
-* Once everything is set up and configured, read the manual to register cards and add audio: [`MANUAL.md`](docs/MANUAL.md)
+* Installation instructions for Raspbian [Jessie](docs/INSTALL-jessie.md) and [Stretch](docs/INSTALL-stretch.md) are available in the `docs` folder.
+* You can also use the [headless installation over ssh](docs/INSTALL-stretch.md#ssh-install) straight from a fresh SD card.
+* For a quick install procedure, take a look at the [bash install script for Jessie](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/scripts/installscripts/jessie-install-default-01.sh) or the [bash install script for Stretch](https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/scripts/installscripts/stretch-install-default-01.sh). This should get you started quickly, but you still need to walk through the following steps:
+* Configure the Phoniebox after having installed all the components. See details for [Jessie](docs/CONFIGURE-jessie.md) or [Stretch](docs/CONFIGURE-stretch.md).
+* Once everything has been installed and configured, read the manual to change settings, register RFID cards, add audio: [`MANUAL.md`](docs/MANUAL.md)
 
 Adding push buttons to control volume, skipping tracks, pause, play: read the [GPIO buttons installation guide](docs/GPIO-BUTTONS.md).
 
@@ -76,10 +80,14 @@ If you find something that doesn't work. And you tried and tried again, but it s
 
 There is a growing section of [troubleshooting](docs/MANUAL.md#faq) including:
 
-* How do I get the jukebox into a new WiFi network?
-* The `amixer` command requires different device name, not `PCM`
-* Script `daemon_rfid_reader.py` only works via SSH not by RFID cards
-* Script daemon is closing down unexpectedly
+* I want to improve the onboard audio quality
+* I am moving, how do I get the jukebox into my new WiFi network?
+* The RFID Reader doesn't seem to work.
+* Changing the volume does not work, but the playout works.
+* Script `daemon_rfid_reader.py` only works via SSH not by RFID cards.
+* Script daemon is closing down unexpectedly.
+* Everything seems to work, but I hear nothing when swiping a card.
+* I would like to use two cards / IDs to do the same thing.
 
 ## Acknowledgments
 

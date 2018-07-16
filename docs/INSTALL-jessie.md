@@ -2,19 +2,6 @@
 
 *Written for an tested on Raspbian GNU/Linux (jessie)*
 
-## Update information
-
-**Updates from version < 0.9.3**
-
-If you are updating your code from a version smaller 0.9.3 you need to manually make a copy of the file `scripts/playout_controls.sh.sample` to `scripts/playout_controls.sh`. Please run the following lines:
-~~~
-cp /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh.sample /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
-sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
-sudo chmod 775 /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
-~~~
-
----
-
 The installation is the first step to get your jukebox up and running. Once you have done this, proceed to the [configuration](CONFIGURE-jessie.md).
 
 And Once you finished with the configuration, read the [manual](MANUAL.md) to add audio files and RFID cards.
@@ -55,10 +42,6 @@ Here are some pointers to get the software running on Ubuntu Mate for Raspberry 
 ## Configure your RPi
 
 Now you have installed and operating system and even a windows manager (called Pixel on Raspbian). Start up your RPi and it will bring you straight to the home screen. Notice that you are not required to log in.
-
-### Firmware update improves audio out?
-
-If you want to update the RPI firmware, this is the right point to do so. This manual was written for the default firmware. Read more about how to update and why you might want to give it a try in a separate [Firmware Update document](FIRMWARE_UPDATE.md).
 
 ### Configure your keyboard
 
@@ -346,6 +329,16 @@ While we are using *VLC* for all the media to be played on the jukebox, we are u
 ```
 $ sudo apt-get install mpg123
 ```
+
+## Install at (for timer functionality)
+
+The `at` command allows to run commands at a certain time in the 
+future. This is used to have the timer function to shutdown or stop
+player after x minutes.
+
+~~~~
+$ sudo apt-get install at
+~~~~
 
 ## Using a USB soundcard
 

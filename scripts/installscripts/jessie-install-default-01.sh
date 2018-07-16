@@ -50,16 +50,6 @@ sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/sudoers.jessie-default.samp
 sudo chown root:root /etc/sudoers
 sudo chmod 440 /etc/sudoers
 
-# the following is on its way out, uncommenting for now until somebody complains
-# this startup on boot is replaced by systemd towards the end of this script
-# crontab file for user pi
-# -rw------- 1 pi crontab 1227 Nov 17 21:24 /var/spool/cron/crontabs/pi
-# for debugging (which I had to on a RPi 3)  see:
-# https://rahulmahale.wordpress.com/2014/09/03/solved-running-cron-job-at-reboot-on-raspberry-pi-in-debianwheezy-and-raspbian/
-#sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/crontab-pi.jessie-default.sample /var/spool/cron/crontabs/pi
-#sudo chown pi:crontab /var/spool/cron/crontabs/pi
-#sudo chmod 600 /var/spool/cron/crontabs/pi
-
 # device name for barcode reader
 # Note: this will vary from reader to reader. If you run this install script, 
 # read 'Register your USB device for the jukebox' in docs/CONFIGURE-jessie.md to do this step manually
@@ -69,14 +59,19 @@ sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/scripts/deviceName.txt
 sudo chmod 644 /home/pi/RPi-Jukebox-RFID/scripts/deviceName.txt
 
 # copy shell script for player
-cp /home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh.sample /home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh
-sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh
-sudo chmod 775 /home/pi/RPi-Jukebox-RFID/scripts/rfid_trigger_play.sh
+cp /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf.sample /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf
+sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf
+sudo chmod 775 /home/pi/RPi-Jukebox-RFID/settings/rfid_trigger_play.conf
 
-# copy bash script for player controls
-cp /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh.sample /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
-sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
-sudo chmod 775 /home/pi/RPi-Jukebox-RFID/scripts/playout_controls.sh
+# creating files containing editable values for configuration
+echo "PCM" > /home/pi/RPi-Jukebox-RFID/settings/Audio_iFace_Name
+echo "3" > /home/pi/RPi-Jukebox-RFID/settings/Audio_Volume_Change_Step
+echo "100" > /home/pi/RPi-Jukebox-RFID/settings/Max_Volume_Limit
+echo "0" > /home/pi/RPi-Jukebox-RFID/settings/Idle_Time_Before_Shutdown
+
+# make sure bash scripts have the right settings
+sudo chown pi:pi /home/pi/RPi-Jukebox-RFID/scripts/*.sh
+sudo chmod +x /home/pi/RPi-Jukebox-RFID/scripts/*.sh
 
 # The new way of making the bash daemon is using the helperscripts 
 # creating the shortcuts and script from a CSV file.
@@ -106,12 +101,15 @@ sudo systemctl enable dhcpcd
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/rfid-reader.service.stretch-default.sample /etc/systemd/system/rfid-reader.service 
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/startup-sound.service.stretch-default.sample /etc/systemd/system/startup-sound.service
 sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/gpio-buttons.service.stretch-default.sample /etc/systemd/system/gpio-buttons.service
+sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/idle-watchdog.service.sample /etc/systemd/system/idle-watchdog.service
 sudo chown root:root /etc/systemd/system/rfid-reader.service
 sudo chown root:root /etc/systemd/system/startup-sound.service
 sudo chown root:root /etc/systemd/system/gpio-buttons.service
+sudo chown root:root /etc/systemd/system/idle-watchdog.service
 sudo chmod 644 /etc/systemd/system/rfid-reader.service
 sudo chmod 644 /etc/systemd/system/startup-sound.service
 sudo chmod 644 /etc/systemd/system/gpio-buttons.service
+sudo chmod 644 /etc/systemd/system/idle-watchdog.service
 
 ############################
 # Manual intervention needed
@@ -121,4 +119,7 @@ sudo chmod 644 /etc/systemd/system/gpio-buttons.service
 # you must use password 'raspberry' because this is 
 # expected in the smb.conf file
 sudo smbpasswd -a pi
+
+# The final step: register your RFID reader and other configuration:
+# https://github.com/MiczFlor/RPi-Jukebox-RFID/blob/master/docs/CONFIGURE-jessie.md
 
