@@ -24,13 +24,16 @@ CMDVOLDOWN="%CMDVOLDOWN%"
 CMDSTOP="%CMDSTOP%"
 CMDSHUTDOWN="%CMDSHUTDOWN%"
 CMDREBOOT="%CMDREBOOT%"
-# The following commands control VLC playout
+# The following commands control audio playout
 # next and prev play the preivous or next track in the playlist (== folder)
 CMDNEXT="%CMDNEXT%"
 CMDPREV="%CMDPREV%"
-# pause VLC playout
+# seek ahead or back 15 seconds
+CMDSEEKFORW="%CMDSEEKFORW%"
+CMDSEEKBACK="%CMDSEEKBACK%"
+# pause audio playout
 CMDPAUSE="%CMDPAUSE%"
-# resume VLC playout (makes only sense in combination with pause)
+# resume audio playout (makes only sense in combination with pause)
 CMDPLAY="%CMDPLAY%"
 # Timer top stop after x minutes
 STOPAFTER5="%STOPAFTER5%"
@@ -42,4 +45,12 @@ SHUTDOWNAFTER5="%SHUTDOWNAFTER5%"
 SHUTDOWNAFTER15="%SHUTDOWNAFTER15%"
 SHUTDOWNAFTER30="%SHUTDOWNAFTER30%"
 SHUTDOWNAFTER60="%SHUTDOWNAFTER60%"
+# Toggle wifi like in airplane mode
+ENABLEWIFI="%ENABLEWIFI%"
+DISABLEWIFI="%DISABLEWIFI%"
+# Toggle Shuffle mode (not only for the current playlist)
+CMDSHUFFLE="%CMDSHUFFLE%"
+#Controll commands for Audio Recording
+STARTRECORD600="%STARTRECORD600%"
+STOPRECORD="%STOPRECORD%"
 

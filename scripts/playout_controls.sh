@@ -7,6 +7,13 @@
 # makes further development and potential replacement of 
 # the playout player easier.
 
+# $DEBUG true|false
+# prints $COMMAND in the terminal and/or log file
+DEBUG=false
+
+# Set the date and time of now
+NOW=`date +%Y-%m-%d.%H:%M:%S`
+
 # USAGE EXAMPLES:
 # 
 # shutdown RPi:
@@ -17,6 +24,7 @@
 #
 # VALID COMMANDS:
 # shutdown
+# shutdownsilent
 # shutdownafter
 # reboot
 # mute
@@ -35,8 +43,17 @@
 # playerpause
 # playerplay
 # playerreplay
+# playerrepeat
+# playershuffle
+# playlistclear
+# playlistaddplay
+# playlistadd
 # getidletime
 # setidletime
+# disablewifi
+# enablewifi
+# startrecord
+# stoprecord
 
 # SET VARIABLES
 # The variables can be changed in the ../settings dir.
@@ -47,15 +64,7 @@
 # The absolute path to the folder whjch contains all the scripts.
 # Unless you are working with symlinks, leave the following line untouched.
 PATHDATA="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-####################################
-# amixer iface name (e.g. PCM, Speaker, Master)
-# 1. create a default if file does not exist
-if [ ! -f $PATHDATA/../settings/Audio_iFace_Name ]; then
-    echo "PCM" > $PATHDATA/../settings/Audio_iFace_Name
-fi
-# 2. then|or read value from file
-DEVICE=`cat $PATHDATA/../settings/Audio_iFace_Name`
+if [ $DEBUG == "true" ]; then echo "########### SCRIPT playout_controls.sh ($NOW) ##" >> $PATHDATA/../logs/debug.log; fi
 
 ##############################################
 # steps by which to change the audio output (vol up and down)
@@ -90,204 +99,317 @@ fi
 # 2. then|or read value from file
 IDLETIME=`cat $PATHDATA/../settings/Idle_Time_Before_Shutdown`
 
-#echo $DEVICE
+##############################################
+# Path to folder containing audio / streams
+# 1. create a default if file does not exist
+if [ ! -f $PATHDATA/../settings/Audio_Folders_Path ]; then
+    echo "/home/pi/RPi-Jukebox-RFID/shared/audiofolders" > $PATHDATA/../settings/Audio_Folders_Path
+fi
+# 2. then|or read value from file
+AUDIOFOLDERSPATH=`cat $PATHDATA/../settings/Audio_Folders_Path`
+
 #echo $VOLSTEP
 #echo $VOLFILE
+#echo $MAXVOL
 #echo `cat $VOLFILE`
+#echo $IDLETIME
+#echo $AUDIOFOLDERSPATH
 
 #############################################################
 
 # Get args from command line (see Usage above)
-for i in "$@"
-do
-case $i in
-    -c=*|--command=*)
-    COMMAND="${i#*=}"
-    ;;
-    -v=*|--value=*)
-    VALUE="${i#*=}"
-    ;;
-esac
-done
+# Read the args passed on by the command line
+# see following file for details:
+. $PATHDATA/inc.readArgsFromCommandLine.sh
+#for i in "$@"
+#do
+#    case $i in
+#        -c=*|--command=*)
+#        COMMAND="${i#*=}"
+#        ;;
+#        -v=*|--value=*)
+#        VALUE="${i#*=}"
+#        ;;
+#    esac
+#done
 
-if [ "$COMMAND" == "shutdown" ]
-then
-    sudo pkill vlc
-    sleep 1
-    /usr/bin/mpg123 $PATHDATA/../misc/shutdownsound.mp3 
-    sleep 3
-    sudo halt
-
-elif [ "$COMMAND" == "shutdownafter" ]
-then
-    # remove shutdown times if existent
-    for i in `sudo atq -q s | awk '{print $1}'`;do sudo atrm $i;done
-    # -c=shutdownafter -v=0 is to remove the shutdown timer
-    if [ $VALUE -gt 0 ];
-    then
-	# shutdown pi after $VALUE minutes
-	echo "sudo halt" | at -q s now + $VALUE minute
-    fi 
-
-elif [ "$COMMAND" == "reboot" ]
-then
-    sudo reboot
-
-elif [ "$COMMAND" == "mute" ]
-then
-    if [ ! -f $VOLFILE ]; then
-        # $VOLFILE does NOT exist == audio on
-        # read volume in percent and write to $VOLFILE
-        amixer sget \'$DEVICE\' | grep -Po -m 1 '(?<=\[)[^]]*(?=%])' > $VOLFILE
-        # set volume to 0%
-        amixer sset \'$DEVICE\' 0%
-    else
-        # $VOLFILE DOES exist == audio off
-        # read volume level from $VOLFILE and sset as percent
-        amixer sset \'$DEVICE\' `<$VOLFILE`%
-        # delete $VOLFILE
-        rm -f $VOLFILE
-    fi
-    # alternative pull request: [ ! -e $VOLFILE ] && (amixer sget \'$DEVICE\' | egrep -o '[[:space:]][0-9]+[[:space:]]' | tail -n1> $VOLFILE && amixer sset \'$DEVICE\' 0%) || (amixer sset \'$DEVICE\' `<$VOLFILE` && rm -f $VOLFILE)
-
-elif [ "$COMMAND" == "setvolume" ]
-then
-    #increase volume only if VOLPERCENT is below the max volume limit
-    if [ $VALUE -le $MAXVOL ];
-    then
-    	# sset volume level in percent
-    	amixer sset \'$DEVICE\' $VALUE%
-    else
-    	# if we are over the max volume limit, set the volume to maxvol
-	amixer sset \'$DEVICE\' $MAXVOL%
-    fi
-    
-elif [ "$COMMAND" == "volumeup" ]
-then
-    if [ ! -f $VOLFILE ]; then
-        # $VOLFILE does NOT exist == audio on
+if [ $DEBUG == "true" ]; then echo "VAR COMMAND: $COMMAND" >> $PATHDATA/../logs/debug.log; fi
+if [ $DEBUG == "true" ]; then echo "VAR VALUE: $VALUE" >> $PATHDATA/../logs/debug.log; fi
+        
+case $COMMAND in 
+    shutdown)
+        if [ $DEBUG == "true" ]; then echo "   shutdown" >> $PATHDATA/../logs/debug.log; fi
+        $PATHDATA/resume_play.sh -c=savepos && mpc clear
+    	#remove shuffle mode if active
+        SHUFFLE_STATUS=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=random: ).*')
+        if [ "$SHUFFLE_STATUS" == 1 ] ; then  mpc random off; fi
+	sleep 1
+        /usr/bin/mpg123 $PATHDATA/../shared/shutdownsound.mp3 
+        sleep 3
+        sudo halt
+        ;;
+    shutdownsilent)
+        # doesn't play a shutdown sound
+        $PATHDATA/resume_play.sh -c=savepos && mpc clear
+        #remove shuffle mode if active
+        SHUFFLE_STATUS=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=random: ).*')
+        if [ "$SHUFFLE_STATUS" == 1 ] ; then  mpc random off; fi
+	sudo halt
+        ;;
+    shutdownafter)
+        # remove shutdown times if existent
+        for i in `sudo atq -q t | awk '{print $1}'`;do sudo atrm $i;done
+        # -c=shutdownafter -v=0 is to remove the shutdown timer
+        if [ $VALUE -gt 0 ];
+        then
+            # shutdown pi after $VALUE minutes
+            echo "$PATHDATA/playout_controls.sh -c=shutdownsilent" | at -q t now + $VALUE minute
+        fi 
+        ;;
+    reboot)
+        $PATHDATA/resume_play.sh -c=savepos && mpc clear
+        #remove shuffle mode if active
+        SHUFFLE_STATUS=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=random: ).*')
+        if [ "$SHUFFLE_STATUS" == 1 ] ; then  mpc random off; fi
+        sudo reboot
+        ;;
+    mute)
+        if [ ! -f $VOLFILE ]; then
+            # $VOLFILE does NOT exist == audio on
+            # read volume in percent and write to $VOLFILE
+            echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=volume: ).*' > $VOLFILE
+            # set volume to 0%
+            echo -e setvol 0\\nclose | nc -w 1 localhost 6600
+        else
+            # $VOLFILE DOES exist == audio off
+            # read volume level from $VOLFILE and set as percent
+            echo -e setvol `<$VOLFILE`\\nclose | nc -w 1 localhost 6600        
+            # delete $VOLFILE
+            rm -f $VOLFILE
+        fi
+        ;;
+    setvolume)
+        #increase volume only if VOLPERCENT is below the max volume limit
+        if [ $VALUE -le $MAXVOL ];
+        then
+            # set volume level in percent
+            echo -e setvol $VALUE\\nclose | nc -w 1 localhost 6600
+        else
+            # if we are over the max volume limit, set the volume to maxvol
+            echo -e setvol $MAXVOL\\nclose | nc -w 1 localhost 6600
+        fi
+        ;;
+    volumeup)
+        if [ ! -f $VOLFILE ]; then
+            # $VOLFILE does NOT exist == audio on
+            # read volume in percent
+            VOLPERCENT=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=volume: ).*')
+            # increase by $VOLSTEP
+            VOLPERCENT=`expr ${VOLPERCENT} + ${VOLSTEP}` 
+            #increase volume only if VOLPERCENT is below the max volume limit
+            if [ $VOLPERCENT -le $MAXVOL ];
+            then
+                # set volume level in percent
+                echo -e volume +$VOLSTEP\\nclose | nc -w 1 localhost 6600
+            else
+                # if we are over the max volume limit, set the volume to maxvol
+                echo -e setvol $MAXVOL\\nclose | nc -w 1 localhost 6600
+            fi
+        else
+            # $VOLFILE DOES exist == audio off
+            # read volume level from $VOLFILE and set as percent
+            echo -e setvol `<$VOLFILE`\\nclose | nc -w 1 localhost 6600
+            # delete $VOLFILE
+            rm -f $VOLFILE
+        fi
+        ;;
+    volumedown)
+        if [ ! -f $VOLFILE ]; then
+            # $VOLFILE does NOT exist == audio on
+            # decrease by $VOLSTEP
+            echo -e volume -$VOLSTEP\\nclose | nc -w 1 localhost 6600
+        else
+            # $VOLFILE DOES exist == audio off
+            # read volume level from $VOLFILE and set as percent
+            echo -e setvol `<$VOLFILE`\\nclose | nc -w 1 localhost 6600
+            # delete $VOLFILE
+            rm -f $VOLFILE
+        fi
+        ;;
+    getvolume)
         # read volume in percent
-        VOLPERCENT=`amixer sget \'$DEVICE\' | grep -Po -m 1 '(?<=\[)[^]]*(?=%])'`
+        VOLPERCENT=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=volume: ).*')
         echo $VOLPERCENT
-        # increase by $VOLSTEP
-        VOLPERCENT=`expr ${VOLPERCENT} + ${VOLSTEP}` 
-        echo $VOLPERCENT
-	#increase volume only if VOLPERCENT is below the max volume limit
-	if [ $VOLPERCENT -le $MAXVOL ];
-	then
-        	# sset volume level in percent
-        	amixer sset \'$DEVICE\' $VOLPERCENT%
+	;;
+    setmaxvolume)
+        # read volume in percent
+        VOLPERCENT=$(echo -e status\\nclose | nc -w 1 localhost 6600 | grep -o -P '(?<=volume: ).*')
+        # if volume of the box is greater than wanted maxvolume, set volume to maxvolume 
+        if [ $VOLPERCENT -gt $VALUE ];
+        then
+            echo -e setvol $VALUE | nc -w 1 localhost 6600
+        fi
+        # write new value to file
+        echo "$VALUE" > $PATHDATA/../settings/Max_Volume_Limit
+        ;;
+    getmaxvolume)
+        echo $MAXVOL
+        ;;
+    setvolstep)
+        # write new value to file
+        echo "$VALUE" > $PATHDATA/../settings/Audio_Volume_Change_Step
+        ;;
+    getvolstep)
+        echo $VOLSTEP
+        ;;
+    playerstop)
+        # stop the player
+        $PATHDATA/resume_play.sh -c=savepos && mpc stop
+        if [ -e $AUDIOFOLDERSPATH/playing.txt ]
+        then
+            sudo rm $AUDIOFOLDERSPATH/playing.txt
+        fi
+        if [ "$DEBUG" == "true" ]; then echo "remove playing.txt" >> $PATHDATA/../logs/debug.log; fi
+        ;;
+    playerstopafter)
+        # stop player after $VALUE minutes
+        echo "mpc stop" | at -q s now + $VALUE minute
+        ;;
+    playernext)
+        # play next track in playlist (==folder)
+        mpc next
+        ;;
+    playerprev)
+        # play previous track in playlist (==folder)
+        mpc prev
+        ;;
+    playerpause)
+        # pause current track
+        # mpc knows "pause", which pauses only, and "toggle" which pauses and unpauses, whatever is needed
+        mpc toggle
+        ;;
+    playerplay)
+        # play / resume current track
+        if [ $DEBUG == "true" ]; then echo "Attempting to play: $VALUE" >> $PATHDATA/../logs/debug.log; fi
+        # May be called with e.g. -v=1 to start a track in the middle of the playlist.
+        # Note: the numbering of the tracks starts with 0, so -v=1 starts the second track
+        # of the playlist
+        # Another note: "mpc play 1" starts the first track (!)
+        # No checking for resume if the audio is paused, just unpause it
+        PLAYSTATE=$(echo -e "status\nclose" | nc -w 1 localhost 6600 | grep -o -P '(?<=state: ).*')
+        if [ "$PLAYSTATE" == "pause" ]
+        then
+            echo -e "play $VALUE\nclose" | nc -w 1 localhost 6600
+        else
+            $PATHDATA/resume_play.sh -c=resume -v=$VALUE
+        fi
+        ;;
+    playerseek)
+        # jumps back and forward in track.
+        # Usage: ./playout_controls.sh -c=playerseek -v=+15 to jump 15 seconds ahead
+        #        ./playout_controls.sh -c=playerseek -v=-10 to jump 10 seconds back
+        # Note: Not using "mpc seek" here as it fails if one tries to jump ahead of the beginning of the track
+        # (e.g. "mpc seek -15" executed at an elapsed time of 10 seconds let the player hang).
+        # mpd seekcur can handle this.
+        echo -e "seekcur $VALUE\nclose" | nc -w 1 localhost 6600
+        ;;
+    playerreplay)
+        # start the playing track from beginning
+        mpc seek 0
+        ;;
+    playerrepeat)
+        # repeats a single track or a playlist. 
+        # Remark: If "single" is "on" but "repeat" is "off", the playout stops after the current song.
+        # This command may be called with ./playout_controls.sh -c=playerrepeat -v=single, playlist or off
+        case $VALUE in 	
+            single)
+                mpc repeat on
+                mpc single on
+                ;;
+            playlist)
+                mpc repeat on
+                mpc single off
+                ;;
+            *)
+                mpc repeat off
+                mpc single off
+                ;;
+        esac
+        ;;
+    playershuffle)
+        # toogles shuffle mode on/off (not only the current playlist but for the whole mpd)
+        # this is why a check if "random on" has to be done for shutdown and reboot
+        # This command may be called with ./playout_controls.sh -c=playershuffle
+        mpc random
+	;;
+    playlistclear)
+        # clear playlist
+        $PATHDATA/resume_play.sh -c=savepos
+        mpc clear
+	;;
+    playlistaddplay)
+        # add to playlist (and play)
+        # this command clears the playlist, loads a new playlist and plays it. It also handles the resume play feature.
+        # FOLDER = rel path from audiofolders
+        # VALUE = name of playlist
+        if [ $DEBUG == "true" ]; then echo "   playlistaddplay VALUE: $VALUE" >> $PATHDATA/../logs/debug.log; fi
+        if [ $DEBUG == "true" ]; then echo "   playlistaddplay FOLDER: $FOLDER" >> $PATHDATA/../logs/debug.log; fi
+
+        # first clear playlist (and save position if resume play is on)
+        $PATHDATA/resume_play.sh -c=savepos
+        mpc clear
+
+        # write latest folder played to settings file
+        sudo echo ${FOLDER} > $PATHDATA/../settings/Latest_Folder_Played
+        sudo chmod 777 $PATHDATA/../settings/Latest_Folder_Played
+        if [ $DEBUG == "true" ]; then echo "echo ${FOLDER} > $PATHDATA/../settings/Latest_Folder_Played" >> $PATHDATA/../logs/debug.log; fi
+        if [ $DEBUG == "true" ]; then echo "VAR Latest_Folder_Played: $Latest_Folder_Played" >> $PATHDATA/../logs/debug.log; fi
+
+        mpc load "${VALUE//\//SLASH}" && $PATHDATA/resume_play.sh -c=resume
+        if [ "$DEBUG" == "true" ]; then echo "mpc load "${VALUE//\//SLASH}" && $PATHDATA/resume_play.sh -c=resume"; fi
+        # call shuffle_ceck to enable/disable folder-based shuffeling
+        $PATHDATA/shuffle_play.sh -c=shuffle_check
+        if [ $DEBUG == "true" ]; then echo "entering: shuffle_play.sh to execute shuffle_check" >> $PATHDATA/../logs/debug.log; fi
+	;;
+    playlistadd)
+        # add to playlist, no autoplay
+        # save playlist playing
+        mpc load "${VALUE}"
+        ;;
+    setidletime)
+        # write new value to file
+        echo "$VALUE" > $PATHDATA/../settings/Idle_Time_Before_Shutdown
+        # restart service to apply the new value
+        sudo systemctl restart idle-watchdog.service &
+        ;;
+    getidletime)
+        echo $IDLETIME
+        ;;
+    enablewifi)
+        rfkill unblock wifi
+        ;;
+    disablewifi)
+        # see https://forum-raspberrypi.de/forum/thread/25696-bluetooth-und-wlan-deaktivieren/#pid226072 seems to disable wifi,
+        # as good as it gets
+        rfkill block wifi
+        ;;
+    startrecord)	
+
+	#mkdir $AUDIOFOLDERSPATH/Recordings
+	#start recorder if not already started 
+	if ! pgrep -x "arecord" > /dev/null
+	then	
+	    echo "start recorder"	
+	    arecord -D plughw:1 --duration=$VALUE -f cd -vv $AUDIOFOLDERSPATH/Recordings/$(date +"%Y-%m-%d_%H-%M-%S").wav &
+	else
+	    echo "device is already recording"
 	fi
-    else
-        # $VOLFILE DOES exist == audio off
-        # read volume level from $VOLFILE and sset as percent
-        amixer sset \'$DEVICE\' `<$VOLFILE`%
-        # delete $VOLFILE
-        rm -f $VOLFILE
-    fi
-    # alternative pull request: [ -e $VOLFILE ] && (vol=`<$VOLFILE` && vol=`expr ${vol} + ${VOLSTEP}` && amixer sset \'$DEVICE\' $vol && rm -f $VOLFILE) || (amixer sset \'$DEVICE\' ${VOLSTEP}+)
-
-elif [ "$COMMAND" == "volumedown" ]
-    then
-    if [ ! -f $VOLFILE ]; then
-        # $VOLFILE does NOT exist == audio on
-        # read volume in percent
-        VOLPERCENT=`amixer sget \'$DEVICE\' | grep -Po -m 1 '(?<=\[)[^]]*(?=%])'`
-        echo $VOLPERCENT
-        # decrease by $VOLSTEP
-        VOLPERCENT=`expr ${VOLPERCENT} - ${VOLSTEP}` 
-        echo $VOLPERCENT
-        # sset volume level in percent
-        amixer sset \'$DEVICE\' $VOLPERCENT%
-    else
-        # $VOLFILE DOES exist == audio off
-        # read volume level from $VOLFILE and sset as percent
-        amixer sset \'$DEVICE\' `<$VOLFILE`%
-        # delete $VOLFILE
-        rm -f $VOLFILE
-    fi
-    # alternative pull request: [ -e $VOLFILE ] && (vol=`<$VOLFILE` && vol=`expr ${vol} - ${VOLSTEP}` && amixer sset \'$DEVICE\' $vol && rm -f $VOLFILE) || (amixer sset \'$DEVICE\' ${VOLSTEP}-)
-
-elif [ "$COMMAND" == "getvolume" ]
-    then
-    # read volume in percent
-    VOLPERCENT=`amixer sget \'$DEVICE\' | grep -Po -m 1 '(?<=\[)[^]]*(?=%])'`
-    echo $VOLPERCENT
-
-elif [ "$COMMAND" == "setmaxvolume" ]
-    then
-    # read volume in percent
-    VOLPERCENT=`amixer sget \'$DEVICE\' | grep -Po -m 1 '(?<=\[)[^]]*(?=%])'`
-    # if volume of the box is greater than wanted maxvolume, set volume to maxvolume 
-    if [ $VOLPERCENT -gt $VALUE ];
-    then
-	amixer sset \'$DEVICE\' $VALUE%
-    fi
-    # write new value to file
-    echo "$VALUE" > $PATHDATA/../settings/Max_Volume_Limit
-
-elif [ "$COMMAND" == "getmaxvolume" ]
-    then
-    echo $MAXVOL
-
-elif [ "$COMMAND" == "setvolstep" ]
-    then
-    # write new value to file
-    echo "$VALUE" > $PATHDATA/../settings/Audio_Volume_Change_Step
-
-elif [ "$COMMAND" == "getvolstep" ]
-    then
-    echo $VOLSTEP
-
-elif [ "$COMMAND" == "playerstop" ]
-then
-    # kill all running VLC media players
-    sudo pkill vlc
-
-elif [ "$COMMAND" == "playerstopafter" ]
-then
-    # stop player after $VALUE minutes
-    echo "sudo pkill vlc" | at now + $VALUE minute
-
-# for controlling VLC over rc, see:  
-# https://n0tablog.wordpress.com/2009/02/09/controlling-vlc-via-rc-remote-control-interface-using-a-unix-domain-socket-and-no-programming/
-
-elif [ "$COMMAND" == "playernext" ]
-then
-    # play next track in playlist (==folder)
-    echo "next" | nc.openbsd -w 1 localhost 4212
-
-elif [ "$COMMAND" == "playerprev" ]
-then
-    # play previous track in playlist (==folder)
-    echo "prev" | nc.openbsd -w 1 localhost 4212
-
-elif [ "$COMMAND" == "playerpause" ]
-then
-    # pause current track
-    echo "pause" | nc.openbsd -w 1 localhost 4212
-
-elif [ "$COMMAND" == "playerplay" ]
-then
-    # play / resume current track
-    echo "play" | nc.openbsd -w 1 localhost 4212
-
-elif [ "$COMMAND" == "playerreplay" ]
-then
-    # start the playing track from beginning
-    echo "seek 0" | nc.openbsd -w 1 localhost 4212
-
-elif [ "$COMMAND" == "setidletime" ]
-then
-    # write new value to file
-    echo "$VALUE" > $PATHDATA/../settings/Idle_Time_Before_Shutdown
-    # restart service to apply the new value
-    sudo systemctl restart idle-watchdog.service &
-
-elif [ "$COMMAND" == "getidletime" ]
-then
-    echo $IDLETIME
-
-else
-    echo Unknown COMMAND $COMMAND VALUE $VALUE
-fi
+	;;
+    stoprecord)
+	#kill arecord instances
+	sudo pkill arecord
+	;;
+    *)
+        echo Unknown COMMAND $COMMAND VALUE $VALUE
+        ;;
+esac

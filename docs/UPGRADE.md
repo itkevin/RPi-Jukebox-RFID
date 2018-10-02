@@ -9,11 +9,49 @@ Some elements of the installation depend on the OS (like 'Jessie' vs. 'Stretch')
 
 ## Which version am I on?
 
-As of version 0.9.4 there is a file `settings/version` containing the version number.
-For future reference, I will try to break down the upgrade patches / scripts from number
-to number. 
+There is a file `settings/version` containing the version number.
+
+**Note:*** This is work in progress, please share experience, improvements and insights in the [issue section](https://github.com/MiczFlor/RPi-Jukebox-RFID/issues).
+
+# Upgrade from Version 1.1.1 to 1.1.2
+
+A few important bug fixes. And a new design. And the option to decide what the 'second swipe' of a card does (see settings in the web app).
+
+~~~
+cd
+cd RPi-Jukebox-RFID
+git fetch
+git checkout master
+git pull
+~~~
+
+# Upgrade from Version 1.0.0 to 1.1.1
+
+This upgrade brings the web app UI for file management, recursive folder management, wifi switch off and more. The latest [one-line Phoniebox install script](INSTALL-stretch.md#oneLineInstall) contains all the necessary steps, but will treat your upgrade like a new install. Manual upgrade:
+~~~
+cd
+cd RPi-Jukebox-RFID
+git fetch
+git checkout master
+git pull
+# settings for php.ini to support upload
+# make backup
+sudo cp /etc/php/7.0/fpm/php.ini /etc/php/7.0/fpm/php.ini.backup
+# replace file
+sudo cp /home/pi/RPi-Jukebox-RFID/misc/sampleconfigs/php.ini.stretch-default.sample /etc/php/7.0/fpm/php.ini
+sudo chown root:root /etc/php/7.0/fpm/php.ini
+sudo chmod 644 /etc/php/7.0/fpm/php.ini
+sudo service lighttpd force-reload
+sudo service php7.0-fpm restart
+~~~
+
+# Upgrade to Version 1.0
+
+As of version 1.0 there is a much simpler install procedure: copy and paste one line into your terminal and hit *enter*. Find out more about the [one-line Phoniebox install script](INSTALL-stretch.md#oneLineInstall).
 
 # Upgrade from 0.9.5 to 0.9.7
+* Adding a *Settings* page in the web app to control features like 'idle shutdown' and 'max volume' and toggle systemd services
+* Documentation / troubleshooting / tricks: how to install via ssh, improve on board audio quality and the like
 * Adding auto shutdown when idle for longer than x minutes (see [manual](MANUAL.md#settings) for details)
 * Adding maximum volume percent to settings (see [manual](MANUAL.md#settings) for details)
 * Fixing bug: settings volume for stereo audio iFace

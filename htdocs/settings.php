@@ -6,7 +6,7 @@ include("inc.header.php");
 * START HTML
 *******************************************/
 
-html_bootstrap3_createHeader("en","RPi Jukebox",$conf['base_url']);
+html_bootstrap3_createHeader("en","Phoniebox",$conf['base_url']);
 
 ?>
 <body>
@@ -14,25 +14,56 @@ html_bootstrap3_createHeader("en","RPi Jukebox",$conf['base_url']);
 
 <?php
 include("inc.navigation.php");
+
+if($debug == "true") {
+    print "<pre>";
+    print "_POST:\n";
+    print_r($_POST);
+    print "</pre>";
+}
+
 ?>
 
+<div class="row">
+  <div class="col-lg-12">
+  <strong><?php print $lang['globalJumpTo']; ?>:</strong>
+        <a href="#RFID" class="xbtn xbtn-default ">
+        <i class='mdi mdi-cards-outline'></i> <?php print $lang['globalRFIDCards']; ?>
+        </a> | 
+        <a href="#volume" class="xbtn xbtn-default ">
+        <i class='mdi mdi-volume-high'></i> <?php print $lang['globalVolumeSettings']; ?>
+        </a> | 
+        <a href="#autoShutdown" class="xbtn xbtn-default ">
+        <i class='mdi mdi-clock-end'></i> <?php print $lang['globalIdleShutdown']." / ".$lang['globalSleepTimer']; ?>
+        </a> | 
+        <a href="#wifi" class="xbtn xbtn-default ">
+        <i class='mdi mdi-wifi'></i> <?php print $lang['globalWifiSettings']; ?>
+        </a> | 
+        <a href="#externalInterfaces" class="xbtn xbtn-default ">
+        <i class='mdi mdi-usb'></i> <?php print $lang['globalExternalInterfaces']; ?>
+        </a>  | 
+        <a href="#secondSwipe" class="xbtn xbtn-default ">
+        <i class='mdi mdi-cards-outline'></i> <?php print $lang['settingsSecondSwipe']; ?>
+        </a> 
+  </div>
+</div>
+        <br/>
 <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h4 class="panel-title">
-         <i class='fa fa-credit-card'></i> Manage Files and Chips
+      <h4 class="panel-title"><a name="RFID"></a>
+         <i class='mdi mdi-cards-outline'></i> <?php print $lang['indexManageFilesChips']; ?>
       </h4>
     </div><!-- /.panel-heading -->
 
       <div class="panel-body">
-	    <div class="row">
-	      <div class="col-lg-12">
-	        <!-- Button trigger modal -->
+        <div class="row">
+          <div class="col-lg-12">
                 <a href="cardRegisterNew.php" class="btn btn-primary btn">
-                <i class='fa  fa-plus-circle'></i> Register new card ID
+                <i class='mdi mdi-cards-outline'></i> <?php print $lang['globalRegisterCard']; ?>
                 </a>
-	      </div><!-- / .col-lg-12 -->
-	    </div><!-- /.row -->
+          </div><!-- / .col-lg-12 -->
+        </div><!-- /.row -->
       </div><!-- /.panel-body -->
 
     </div><!-- /.panel -->
@@ -41,39 +72,22 @@ include("inc.navigation.php");
 <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h4 class="panel-title">
-         <i class='fa fa-bullhorn'></i> Volume Settings
+      <h4 class="panel-title"><a name="volume"></a>
+         <i class='mdi mdi-volume-high'></i> <?php print $lang['globalVolumeSettings']; ?>
       </h4>
     </div><!-- /.panel-heading -->
 
-      <div class="panel-body">
-	<div class="row">
-		<div class="col-xs-12">
-		<h5>Volume</h5>
+    <div class="panel-body">
+      <div class="row">
 <?php
-include("inc.volumeSelect.php");
-?>
-		</div><!-- / .col-xs-12 -->
-	</div><!-- / .row -->
+include("inc.setVolume.php");
 
-	<div class="row">
-		<div class="col-xs-12">
-		<h5>Maximum Volume</h5>
-<?php
-include("inc.maxVolumeSelect.php");
-?>
-		</div><!-- / .col-xs-12 -->
-	</div><!-- / .row -->
+include("inc.setMaxVolume.php");
 
-	<div class="row">
-		<div class="col-xs-12">
-		<h5>Volume Step</h5>
-<?php
-include("inc.volumeStepSelect.php");
+include("inc.setVolumeStep.php");
 ?>
-		</div><!-- / .col-xs-12 -->
-	</div><!-- / .row -->
-      </div><!-- /.panel-body -->
+      </div><!-- / .row -->
+    </div><!-- /.panel-body -->
 
   </div><!-- /.panel -->
 </div><!-- /.panel-group -->
@@ -81,31 +95,43 @@ include("inc.volumeStepSelect.php");
 <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h4 class="panel-title">
-        <i class='fa fa-clock-o'></i> Auto Shutdown Settings
+      <h4 class="panel-title"><a name="autoShutdown"></a>
+        <i class='mdi mdi-clock-end'></i> <?php print $lang['globalAutoShutdown']." ".$lang['globalSettings']; ?>
+      </h4>
+    </div><!-- /.panel-heading -->
+    <div class="panel-body">
+
+        <div class="row">
+
+<?php
+include("inc.setSleeptimer.php");
+?>
+
+        </div><!-- / .row -->
+
+        <div class="row">
+<?php
+include("inc.setIdleShutdown.php");
+?>
+        </div><!-- / .row -->
+
+    </div><!-- /.panel-body -->
+    
+  </div><!-- /.panel -->
+</div><!-- /.panel-group -->
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title"><a name="wifi"></a>
+        <i class='mdi mdi-wifi'></i> <?php print $lang['globalWifiSettings']; ?>
       </h4>
     </div><!-- /.panel-heading -->
     
       <div class="panel-body">
-
-	<div class="row">
-		<div class="col-xs-12">
-		<h5>Sleep Timer</h5>
 <?php
-include("inc.sleeptimerSelect.php");
+include("inc.setWifi.php");
 ?>
-		</div><!-- / .col-xs-12 -->
-	</div><!-- / .row -->
-
-	<div class="row">
-		<div class="col-xs-12">
-		<h5>Idle Shutdown</h5>
-<?php
-include("inc.idleShutdownSelect.php");
-?>
-		</div><!-- / .col-xs-12 -->
-	</div><!-- / .row -->
-
       </div><!-- /.panel-body -->
     
   </div><!-- /.panel -->
@@ -114,14 +140,31 @@ include("inc.idleShutdownSelect.php");
 <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h4 class="panel-title">
-        <i class='fa fa-keyboard-o'></i> Input Devices Settings
+      <h4 class="panel-title"><a name="externalInterfaces"></a>
+        <i class='mdi mdi-usb'></i> <?php print $lang['globalExternalInterfaces']; ?>
       </h4>
     </div><!-- /.panel-heading -->
     
       <div class="panel-body">
 <?php
-include("inc.inputDevicesSettings.php");
+include("inc.setInputDevices.php");
+?>
+      </div><!-- /.panel-body -->
+    
+  </div><!-- /.panel -->
+</div><!-- /.panel-group -->
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title"><a name="secondSwipe"></a>
+        <i class='mdi mdi-cards-outline'></i> <?php print $lang['settingsSecondSwipe']; ?>
+      </h4>
+    </div><!-- /.panel-heading -->
+    
+      <div class="panel-body">
+<?php
+include("inc.setSecondSwipe.php");
 ?>
       </div><!-- /.panel-body -->
     
